@@ -6,9 +6,11 @@ COLS = 5
 MINES = 5
 
 window = tk.Tk()
-window.title("踩地雷 V2")
+window.title("踩地雷 V3")
 
-mines = [[False for _ in range(COLS)] for _ in range(ROWS)]
+mines = [[False]*COLS for _ in range(ROWS)]
+flags = [[False]*COLS for _ in range(ROWS)]
+buttons = []
 
 # 放地雷
 count = 0
@@ -19,7 +21,6 @@ while count < MINES:
         mines[r][c] = True
         count += 1
 
-# 計算周圍地雷數
 def count_mines(r, c):
     total = 0
     for dr in [-1, 0, 1]:
@@ -30,25 +31,43 @@ def count_mines(r, c):
                     total += 1
     return total
 
-def click(r, c):
+def game_over():
+    for r in range(ROWS):
+        for c in range(COLS):
+            if mines[r][c]:
+                buttons[r][c].config(text="💣", bg="red")
+
+def left_click(r, c):
+    if flags[r][c]:
+        return
+
     if mines[r][c]:
-        buttons[r][c].config(text="💣", bg="red")
+        game_over()
         print("Game Over")
     else:
-        number = count_mines(r, c)
-        buttons[r][c].config(text=str(number), state="disabled")
+        n = count_mines(r, c)
+        buttons[r][c].config(text=str(n), state="disabled")
 
-buttons = []
+def right_click(event, r, c):
+    if buttons[r][c]["state"] == "disabled":
+        return
+
+    if not flags[r][c]:
+        buttons[r][c].config(text="🚩")
+        flags[r][c] = True
+    else:
+        buttons[r][c].config(text="")
+        flags[r][c] = False
+
 for r in range(ROWS):
     row = []
     for c in range(COLS):
-        btn = tk.Button(
-            window,
-            width=4,
-            height=2,
-            command=lambda r=r, c=c: click(r, c)
-        )
+        btn = tk.Button(window, width=4, height=2)
         btn.grid(row=r, column=c)
+
+        btn.config(command=lambda r=r, c=c: left_click(r, c))
+        btn.bind("<Button-3>", lambda e, r=r, c=c: right_click(e, r, c))
+
         row.append(btn)
     buttons.append(row)
 
